@@ -18,7 +18,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import average_precision_score
 
-# 1. SETUP E CARREGAMENTO
+#SETUP E CARREGAMENTO
 
 warnings.filterwarnings('ignore')
 
@@ -47,7 +47,7 @@ def load_data():
     return df
 
 
-# 2. FEATURE ENGINEERING (Versão 3.1)
+#FEATURE ENGINEERING (Versão 3.1)
 
 def create_features(df):
     df = df.copy()
@@ -102,7 +102,7 @@ def create_features(df):
     return df, final_features
 
 
-# 3. XGBOOST TUNING
+# XGBOOST TUNING
 
 def temporal_cv_score(df, features, params):
     """
@@ -167,17 +167,17 @@ def tune_xgboost(df, features):
     print(f"✅ Melhores Parâmetros: {best_params} (MAP: {best_score:.4f})")
     return best_params
 
-# 4. BENCHMARK DE MODELOS (Com Pipeline e Re-treino)
+# 4BENCHMARK DE MODELOS (Com Pipeline e Re-treino)
 
 def run_benchmark(df, features, xgb_tuned_params=None):
     print("\n" + "="*80)
-    print(f" BATALHA DE MODELOS (2000-2024)")
+    print(f"BENCHMARK DE MODELOS (2000-2024)")
     print("="*80)
     
     if xgb_tuned_params is None:
         xgb_tuned_params = {'n_estimators': 200, 'max_depth': 4, 'learning_rate': 0.03}
     
-    # Definição dos Classificadores Base
+    # Classificadores Base
     clfs = {
         "LogReg": LogisticRegression(class_weight='balanced', max_iter=2000, solver='liblinear'),
         "RForest": RandomForestClassifier(n_estimators=200, max_depth=6, class_weight='balanced', random_state=42, n_jobs=-1),
@@ -186,7 +186,7 @@ def run_benchmark(df, features, xgb_tuned_params=None):
         "CatBoost": CatBoostClassifier(iterations=200, depth=4, learning_rate=0.03, auto_class_weights='Balanced', random_state=42, verbose=0, allow_writing_files=False)
     }
     
-    # Criação dos PIPELINES (Imputer -> Scaler -> Classificador)
+    # Criacao dos Pipelines
     pipelines = {}
     for name, clf in clfs.items():
         pipelines[name] = Pipeline([
@@ -214,9 +214,11 @@ def run_benchmark(df, features, xgb_tuned_params=None):
         
         if real_winner.empty: continue
         
-        # Agora passamos os dados BRUTOS para o pipeline
+
+        X_train = train[features]
         y_train = train['oscar_nominated']
         X_test = test[features]
+
         
         row_str = f"{test_year:<6} | {str(real_winner.iloc[0]['title'])[:20]:<20}"
         
@@ -232,8 +234,8 @@ def run_benchmark(df, features, xgb_tuned_params=None):
             except IndexError:
                 winner_rank = 999
             
-            icon = "🥇" if winner_rank == 1 else ("✅" if winner_rank <= 10 else "❌")
-            row_str += f" | {winner_rank:<3} {icon}"
+            indicator = "*" if winner_rank == 1 else ("+" if winner_rank <= 10 else " ")
+            row_str += f" | {winner_rank:<3} {indicator}"
             
             top_10_ids = set(ranked.head(10)['id'])
             real_ids = set(real_nominees['id'])
@@ -246,7 +248,7 @@ def run_benchmark(df, features, xgb_tuned_params=None):
         print(row_str)
 
     print("-" * 80)
-    print("🏆 RESULTADO FINAL:")
+    print("RESULTADO FINAL:")
     
     best_model_name = None
     best_score = -1
@@ -261,21 +263,16 @@ def run_benchmark(df, features, xgb_tuned_params=None):
             best_score = avg_ap
             best_model_name = name
             
-    print(f"\n👑 O CAMPEÃO É: {best_model_name}")
-
-    # retreinar o pipeline campeão com TODO o histórico (2000-2024)
-
-    print(f"\n🔄 Re-treinando {best_model_name} com todo o histórico (2000-2024) para uso futuro...")
+    print(f"\nMelhor Modelo: {best_model_name}")
     
-    # Pegamos o pipeline vencedor
+    print(f"\nRetreinando {best_model_name} com todo o historico (2000-2024)...")
+    
     final_pipeline = pipelines[best_model_name]
     
-    # Dados históricos completos
     full_history = df[df['year'] <= 2024]
     X_full = full_history[features]
     y_full = full_history['oscar_nominated']
     
-    # O pipeline aplica o imputer e o scaler automaticamente antes de treinar
     final_pipeline.fit(X_full, y_full)
     
     return final_pipeline, best_model_name
