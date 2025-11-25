@@ -46,7 +46,7 @@ def get_all_movies_by_year(start_year, end_year):
             }
             
             try:
-                # 1. FAZ A CHAMADA DE "DESCOBERTA" (/discover)
+                # 1. FAZ A CHAMADA DE DESCOBERTA
                 response = requests.get(discover_url, headers=HEADERS, params=params)
                 response.raise_for_status() 
                 data = response.json()
@@ -62,7 +62,7 @@ def get_all_movies_by_year(start_year, end_year):
                 
                 print(f"  Processando página {current_page}/{total_pages}...")
                 
-                # 2. FAZ A CHAMADA DE "DETALHE" (/movie/{id}) PARA CADA FILME
+                # 2. FAZ A CHAMADA DE dETALHE PARA CADA FILME
                 for movie_summary in results:
                     movie_id = movie_summary.get('id')
                     if not movie_id:
@@ -80,10 +80,9 @@ def get_all_movies_by_year(start_year, end_year):
                         )
                         movie_detail = detail_response.json()
                         
-                        # "Entrega" o JSON com os detalhes completos
                         yield movie_detail 
                         
-                        time.sleep(0.1) # Pausa curta para não sobrecarregar a API
+                        time.sleep(0.1) 
 
                     except requests.exceptions.RequestException as e_detail:
                         print(f"    Erro ao buscar detalhe do ID {movie_id}: {e_detail}")
@@ -103,18 +102,18 @@ if __name__ == "__main__":
     START_YEAR = 2000
     END_YEAR = 2025 
     
-    # 1. Cria o iterador (o generator ainda não rodou)
+    # Cria o iterador 
     movie_generator = get_all_movies_by_year(START_YEAR, END_YEAR)
     
 
     
     # Define o tamanho do seu lote (batch)
     BATCH_SIZE = 100 
-    all_my_movies = [] # O array que você queria
+    all_my_movies = [] 
 
     print(f"\nIniciando processamento em lotes de {BATCH_SIZE}...")
     
-    # 'islice' pega BATCH_SIZE itens do generator de cada vez
+    # 
 
     while batch := list(islice(movie_generator, BATCH_SIZE)):
         print(f"--- Processado um lote de {len(batch)} filmes ---")
@@ -320,11 +319,11 @@ raw_targets = """341;2000;Oscars;Best Picture;Gladiator;Winner;tt0172495
 529;2024;Oscars;Best Picture;The Substance;Nominated;tt12198080
 530;2024;Oscars;Best Picture;Wicked;Nominated;tt1300730"""
 
-# 2. Parse da lista (extraindo o IMDB ID que é a chave única e segura)
+# 2. extraindo o IMDB ID que é a chave única e segura)
 targets_to_check = []
 for line in raw_targets.strip().split('\n'):
     parts = line.split(';')
-    # O índice 4 é o título, índice 6 é o IMDB ID (ttXXXXXXX)
+    # O índice 4 é o título, índice 6 é o IMDB ID 
     if len(parts) >= 7:
         targets_to_check.append({
             'title': parts[4],
@@ -421,9 +420,6 @@ missing_targets_manual = [
     {'title': 'The Queen', 'year': 2006, 'imdb_id': 'tt0436069'},
     {'title': 'Finding Neverland', 'year': 2004, 'imdb_id': 'tt0309941'}
 ]
-# --- CONFIGURAÇÃO ---
-# Certifique-se de que suas chaves/headers estão definidos
-# HEADERS = { ... } (Use os mesmos do seu script principal)
 
 def recover_missing_movies_hybrid(missing_list, existing_list_ref):
     """
@@ -435,7 +431,7 @@ def recover_missing_movies_hybrid(missing_list, existing_list_ref):
     search_url_base = "https://api.themoviedb.org/3/search/movie"
     movie_detail_url_base = "https://api.themoviedb.org/3/movie/"
     
-    # [CORREÇÃO] Definir os parâmetros extras aqui também!
+   
     detail_params = {
         'append_to_response': 'credits,keywords,release_dates'
     }
@@ -494,7 +490,6 @@ def recover_missing_movies_hybrid(missing_list, existing_list_ref):
             try:
                 detail_url = f"{movie_detail_url_base}{tmdb_id}"
                 
-                # [CORREÇÃO CRÍTICA] Passamos os params aqui!
                 resp = requests.get(detail_url, headers=HEADERS, params=detail_params)
                 
                 if resp.status_code == 200:
@@ -519,12 +514,10 @@ def recover_missing_movies_hybrid(missing_list, existing_list_ref):
     return recovered_movies
 if __name__ == "__main__":
     
-    # ... (Seu código anterior que preenche all_my_movies via get_all_movies_by_year) ...
-    # Suponha que all_my_movies já tenha os filmes normais extraídos.
-    
+   
     print(f"Total antes da recuperação: {len(all_my_movies)}")
     
-    # >>> CHAMADA DA FUNÇÃO AQUI <<<
+    
     # Isso vai adicionar os filmes faltantes (Wicked, Anora, etc.) com os dados de CREDITS dentro de all_my_movies
     recover_missing_movies_hybrid(missing_targets_manual, all_my_movies)
     
@@ -542,7 +535,7 @@ def process_film(film):
 
     result = {}
     
-    # --- 1. DADOS BÁSICOS ---
+    # 1. DADOS BÁSICOS 
     result['id'] = film_id
     result['imdb_id'] = imdb_id
     result['title'] = film.get('title')
@@ -574,7 +567,7 @@ def process_film(film):
     production_countries = film.get('production_countries', [])
     result['country_iso_2'] = production_countries[0].get('iso_3166_1') if production_countries else None
 
-    # --- 2. DADOS TÉCNICOS (DIRETOR) ---
+    #  DADOS TÉCNICOS (DIRETOR) 
     credits = film.get('credits', {})
     crew = credits.get('crew', [])
     cast = credits.get('cast', [])
@@ -588,7 +581,7 @@ def process_film(film):
         result['director_id'] = None
         result['director_name'] = None
 
-    # --- 3. DADOS DE ELENCO (TOP 3) ---
+    # DADOS DE ELENCO (TOP 3) 
     top_cast = cast[:3] 
     
     result['actor_1_id'] = top_cast[0]['id'] if len(top_cast) > 0 else None
@@ -600,7 +593,6 @@ def process_film(film):
     result['actor_3_id'] = top_cast[2]['id'] if len(top_cast) > 2 else None
     result['actor_3_name'] = top_cast[2]['name'] if len(top_cast) > 2 else None
 
-    # --- 4. CONTEXTO (ESTÚDIOS, KEYWORDS, RATING) ---
     # Estúdios
     production_companies = film.get('production_companies', [])
     studios = [c['name'] for c in production_companies]
@@ -614,7 +606,7 @@ def process_film(film):
         keywords_list = [] # Caso venha num formato inesperado
     result['keywords'] = "|".join([k['name'] for k in keywords_list])
 
-    # MPAA Rating (US)
+  
     release_dates = film.get('release_dates', {}).get('results', [])
     us_rating = None
     for country in release_dates:
@@ -626,7 +618,7 @@ def process_film(film):
         if us_rating: break
     result['mpaa_rating'] = us_rating
 
-    # --- 5. PROCESSAMENTO DE GÉNEROS (MOVIDO PARA ANTES DO RETURN) ---
+    
     genres = film.get('genres', []) 
     processed_genres = [] 
     
@@ -877,13 +869,13 @@ finally:
 def sanitize_and_correct_dataframe(df_gold, awards_path):
     print("\n--- 🧹 Iniciando Saneamento Avançado (Correção de Anos) ---")
     
-    # 1. REMOVER DUPLICATAS DE ID
+    # REMOVER DUPLICATAS DE ID
     if 'imdb_id' in df_gold.columns:
         df_gold = df_gold.drop_duplicates(subset=['imdb_id'], keep='first')
     else:
         df_gold = df_gold.drop_duplicates(subset=['id'], keep='first')
 
-    # 2. CARREGAR GABARITO
+    #  CARREGAR GABARITO
     try:
         df_awards = pd.read_csv(awards_path, sep=';')
         
@@ -937,7 +929,7 @@ def sanitize_and_correct_dataframe(df_gold, awards_path):
         print(f"✅ Anos corrigidos (alinhados à cerimônia): {count_year_fix}")
         print(f"✅ Vencedores marcados: {df_gold['oscar_winner'].sum()}")
 
-        # 4. AUDITORIA FINAL DE DUPLICIDADE
+        # AUDITORIA FINAL DE DUPLICIDADE
         winners = df_gold[df_gold['oscar_winner'] == 1]
         dup_years = winners['year'].value_counts()
         dup_years = dup_years[dup_years > 1]
@@ -977,7 +969,7 @@ def add_context_features(df):
     
     df['is_top_studio'] = df['studios'].apply(check_studio)
 
-    # 2. Is Biopic / True Story
+    # Is Biopic / True Story
     def check_biopic(kw_str):
         if pd.isna(kw_str): return 0
         kw_str = str(kw_str).lower()
@@ -1018,7 +1010,6 @@ def calculate_director_stats(df_gold, df_awards):
     awards_merged['director_key'] = awards_merged.apply(get_key, axis=1)
     df_gold['director_key'] = df_gold.apply(get_key, axis=1)
     
-    # Build History
     history = {}
     for _, row in awards_merged.dropna(subset=['director_key']).iterrows():
         k = row['director_key']
@@ -1027,7 +1018,6 @@ def calculate_director_stats(df_gold, df_awards):
         if k not in history: history[k] = []
         history[k].append({'year': y, 'win': win})
 
-    # Apply to Gold
     wins, noms = [], []
     for _, row in df_gold.iterrows():
         k = row['director_key']
@@ -1050,13 +1040,13 @@ def calculate_cast_stats(df_gold, df_awards):
     """
     print("--- 🎭 Calculando estatísticas do Elenco (Cast Prestige) ---")
     
-    # 1. Filtra Prémios de Atuação
+   
     acting_awards = df_awards[
         (df_awards['award_source'].str.lower() == 'oscars') & 
         (df_awards['award_category'].str.contains('Actor|Actress|Supporting', case=False, na=False))
     ].copy()
     
-    # 2. Mapa de Referência (Filme -> Atores)
+    
     actor_ref = df_gold[[
         'imdb_id', 
         'actor_1_id', 'actor_1_name',
@@ -1067,8 +1057,8 @@ def calculate_cast_stats(df_gold, df_awards):
     awards_merged = pd.merge(acting_awards, actor_ref, on='imdb_id', how='left')
     awards_merged['award_year'] = pd.to_numeric(awards_merged['award_year'], errors='coerce').fillna(0)
     
-    # 3. Construir Histórico de Vitórias por ATOR
-    # Dicionário: Actor_Key -> List of Wins/Noms
+    # Histórico de Vitórias por ATOR
+    
     actor_history = {} # Key: str(actor_id)
     
     def register_stat(actor_id, year, win):
@@ -1082,7 +1072,7 @@ def calculate_cast_stats(df_gold, df_awards):
         year = row['award_year']
         win = (str(row['status']).lower() == 'winner')
         
-        # HEURÍSTICA DE ATRIBUIÇÃO
+         
         # Se for "Lead", damos crédito ao Actor 1
         if 'supporting' not in cat: 
             register_stat(row['actor_1_id'], year, win)
@@ -1091,7 +1081,7 @@ def calculate_cast_stats(df_gold, df_awards):
             register_stat(row['actor_2_id'], year, win)
             register_stat(row['actor_3_id'], year, win)
 
-    # 4. Calcular Score Cumulativo para o Filme Atual
+    # calcular Score Cumulativo para o Filme Atual
     # Cast Prestige = Soma das vitórias passadas dos 3 atores principais
     cast_prestige_list = []
     
@@ -1256,15 +1246,15 @@ def create_gold_dataset():
     # Retirando o id duplicado das colunas que vieram da base dos oscars
     if 'film_id' in df_gold.columns:
         df_gold = df_gold.drop(columns=['film_id'])
-    # A. Contexto (Studios & Biopic)
+    # Contexto (Studios & Biopic)
     df_gold = add_context_features(df_gold)
     
-    # B. Diretor Stats
+    # Diretor Stats
     df_gold = calculate_director_stats(df_gold, df_winners)
     
-    # C. Cast Prestige (Novo!)
+    #  Cast Prestige (Novo!)
     df_gold = calculate_cast_stats(df_gold, df_winners)
-    # 7. Saneamento Final (Target Class)
+ 
     df_gold['oscar_nominated'] = 0
     df_gold['oscar_winner'] = 0
     df_gold = sanitize_and_correct_dataframe(df_gold, winners_csv_path)
@@ -1284,8 +1274,7 @@ def create_gold_dataset():
             'mpaa_rating', 'runtime'
         ]
         
-        # --- CORREÇÃO DO ERRO ---
-        # Forçamos list() para garantir que é concatenação e não soma vetorial
+        
     cols_order = static_cols + list(genre_cols)
         
     # Mantém outras colunas que existam mas não estão na lista
@@ -1293,7 +1282,7 @@ def create_gold_dataset():
     final_cols = cols_order + existing_cols
     
     df_gold[final_cols].to_csv(output_path, index=False, sep=';')
-    print(f"🎉 Dataset Gold gerado com sucesso: {output_path}")
+    print(f"Dataset Gold gerado com sucesso: {output_path}")
     print(df_gold[['title', 'cast_prestige', 'is_top_studio', 'is_biopic']].head())
 
 if __name__ == "__main__":

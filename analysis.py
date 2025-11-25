@@ -118,22 +118,16 @@ for p in ax.patches:
 
 plt.show()
 # %%
-# 1. Defina as colunas que você quer interpolar
+
 cols_to_interpolate = ['inflation', 'gdp_growth', 'gdp_per_capita', 'unemployment']
 
-# 2. ORDENAÇÃO (CRÍTICO!)
-# O Pandas precisa que os anos estejam em ordem para a interpolação fazer sentido.
 df_gold = df_gold.sort_values(by=['country_iso_3', 'year'])
 
-# 3. Aplica a interpolação AGRUPADA POR PAÍS
-# O 'transform' aplica a função em cada grupo separadamente e retorna o resultado no formato original
 df_gold[cols_to_interpolate] = df_gold.groupby('country_iso_3')[cols_to_interpolate].transform(
     lambda x: x.interpolate(method='linear', limit_direction='both')
 )
 
-# 4. Fallback (Plano B)
-# A interpolação falha se um país NÃO tiver dado nenhum em nenhum ano (tudo NaN).
-# Nesses casos raros, preenchemos o que sobrou com a média global do ano ou do dataset.
+# fallback 
 for col in cols_to_interpolate:
     remaining_nans = df_gold[col].isna().sum()
     if remaining_nans > 0:
@@ -152,7 +146,7 @@ print(f"Total de filmes sem país: {len(filmes_sem_pais)}")
 print(filmes_sem_pais[['id', 'title', 'year', 'country_iso_2']].head(10))
 
 # 1. Filtra filmes que NÃO têm país MAS foram indicados ao Oscar
-# (Lembrando: todo vencedor é também um indicado, então basta checar 'oscar_nominated')
+
 filmes_importantes_sem_pais = df_gold[
     (df_gold['country_iso_2'].isna()) & 
     (df_gold['oscar_nominated'] == 1)
